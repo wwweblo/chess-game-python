@@ -1,3 +1,4 @@
+# board.py
 import pygame
 import chess
 
@@ -11,18 +12,25 @@ def load_images():
             images[color + piece] = pygame.image.load(f'images/{color}{piece}.png')
     return images
 
-def draw_board(screen, board, dragging_piece, mouse_pos, flip_board=False):
+def draw_board(screen, board, dragging_piece, mouse_pos, flip_board=False, last_move=None):
     images = load_images()
     colors = [pygame.Color("white"), pygame.Color("gray")]
+    highlight_color = pygame.Color("yellow")
 
     for row in range(8):
         for col in range(8):
             # Если доска перевернута, строки и столбцы должны отображаться зеркально
             display_row = 7 - row if flip_board else row
             display_col = 7 - col if flip_board else col
-            
+
             # Определение цвета клетки
             color = colors[(row + col) % 2]
+
+            # Подсветка клеток последнего хода
+            if last_move:
+                if chess.square(col, 7 - row) in (last_move.from_square, last_move.to_square):
+                    color = highlight_color
+
             pygame.draw.rect(screen, color, pygame.Rect(display_col * (screen.get_width() // 8), display_row * (screen.get_height() // 8), screen.get_width() // 8, screen.get_height() // 8))
 
             # Отображение фигуры

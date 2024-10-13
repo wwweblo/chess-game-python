@@ -11,10 +11,11 @@ class Game:
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption('Шахматы')
         self.board = chess.Board()
-        self.chess_bot = ChessBotWrapper(depth=3)  # Use the wrapper
+        self.chess_bot = ChessBotWrapper(depth=3)  # Используем ChessBotWrapper
         self.dragging_piece = None
         self.player_color = None  # Цвет игрока
         self.flip_board = False   # Нужно ли переворачивать доску для черных
+        self.last_move = None  # Последний ход для подсветки
 
     def choose_color(self):
         # Создание окна для выбора цвета
@@ -55,7 +56,6 @@ class Game:
                         self.flip_board = True  # Переворачиваем доску для черных
                         choosing = False
 
-
     def run(self):
         # Вызов выбора цвета перед началом игры
         self.choose_color()
@@ -71,7 +71,8 @@ class Game:
                 elif event.type == pygame.MOUSEBUTTONUP:
                     self.handle_mouse_button_up(event)
 
-            draw_board(self.screen, self.board, self.dragging_piece, mouse_pos, self.flip_board)
+            # Отрисовка доски с подсветкой последнего хода
+            draw_board(self.screen, self.board, self.dragging_piece, mouse_pos, self.flip_board, self.last_move)
             pygame.display.flip()
 
             # Если очередь бота и цвет бота совпадает с текущим ходом
@@ -80,6 +81,7 @@ class Game:
                 best_move = self.chess_bot.find_best_move(self.board)
                 if best_move:
                     self.board.push(best_move)
+                    self.last_move = best_move  # Сохраняем последний ход бота
                     print(f"Bot move: {best_move}")  # Печать хода бота
 
     def handle_mouse_button_down(self, event):
@@ -112,5 +114,6 @@ class Game:
             move = chess.Move(self.dragging_piece[0], target_square)
             if move in self.board.legal_moves:
                 self.board.push(move)  # Игрок делает ход
+                self.last_move = move  # Сохраняем последний ход игрока
                 print(f"User move: {move}")  # Печать хода игрока
             self.dragging_piece = None
