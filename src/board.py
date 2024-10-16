@@ -6,6 +6,7 @@ COLORS = ['w', 'b']
 PIECES = ['P', 'N', 'B', 'R', 'Q', 'K']
 
 def load_images():
+    '''Загрузка изображений фигур на доске'''
     images = {}
     for color in COLORS:
         for piece in PIECES:
@@ -13,6 +14,7 @@ def load_images():
     return images
 
 def draw_board(screen, board, dragging_piece, mouse_pos, flip_board=False, last_move=None):
+    '''Отрисовка доски с подсветкой последнего хода'''
     images = load_images()
     colors = [pygame.Color("white"), pygame.Color("gray")]
     highlight_color = pygame.Color("yellow")
