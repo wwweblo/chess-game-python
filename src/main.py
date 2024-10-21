@@ -3,6 +3,7 @@ from game import Game
 
 def main():
     pygame.init()
+    
     game = Game(name='Chess',
                 window_height=800,
                 window_width=800,
