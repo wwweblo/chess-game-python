@@ -10,7 +10,7 @@ def load_images():
     images = {}
     for color in COLORS:
         for piece in PIECES:
-            images[color + piece] = pygame.image.load(f'images/pieces/{color}{piece}.png')
+            images[color + piece] = pygame.image.load(f'assets/images/pieces/{color}{piece}.png')
     return images
 
 def draw_board(screen, board, dragging_piece, mouse_pos, flip_board=False, last_move=None):

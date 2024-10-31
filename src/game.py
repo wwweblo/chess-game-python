@@ -7,17 +7,21 @@ from windows import promotion_window as choose_promotion, color_window as choose
 
 
 class Game:
-    def __init__(self, name, window_width, window_height, bot_depth):
-
+    def __init__(self, name, window_width, window_height, bot_depth, logging=False):
         # Инициализация основных параметров
         self.width, self.height = window_width, window_height
         self.square_size = self.width // 8
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption(name)
 
+        # Инициализация Pygame mixer для звуков
+        pygame.mixer.init()
+        self.move_sound = pygame.mixer.Sound('assets/sounds/move-self.mp3')  # Загрузка звука
+        self.capture_sound = pygame.mixer.Sound('assets/sounds/capture.mp3')  # Загрузка звука захвата
+
         # Инициализация бота
         self.board = chess.Board()
-        self.chess_bot = ChessBotWrapper(depth=bot_depth)
+        self.chess_bot = ChessBotWrapper(depth=bot_depth, logging=logging)
 
         self.dragging_piece = None
         self.player_color = None    # Цвет игрока
@@ -27,7 +31,6 @@ class Game:
     def choose_promotion(self):
         return choose_promotion.choose_promotion(self.screen)
     
-
     def choose_color(self):
         self.player_color = choose_color.choose_color(self.screen)
         if self.player_color == chess.BLACK:
@@ -56,10 +59,20 @@ class Game:
             if self.board.turn != self.player_color:
                 time.sleep(1)
                 best_move = self.chess_bot.find_best_move(self.board)
-                if best_move:
-                    self.board.push(best_move)
-                    self.last_move = best_move  # Сохраняем последний ход бота
-                    print(f"Bot move: {best_move}")  # Печать хода бота
+                if best_move is not None:  # Проверяем, что best_move не None
+                    if isinstance(best_move, chess.Move):  # Проверяем, что best_move является объектом Move
+                        if self.board.is_capture(best_move):
+                            self.capture_sound.play()  # Воспроизведение звука захвата
+                        else:
+                            self.move_sound.play()  # Воспроизведение звука обычного хода
+
+                        self.board.push(best_move)
+                        self.last_move = best_move  # Сохраняем последний ход бота
+                        print(f'Bot move: {best_move}')  # Печать хода бота
+                    else:
+                        print("Error: best_move is not a chess.Move object")
+                else:
+                    print("Error: best_move is None")
 
     def handle_mouse_button_down(self, event):
         x, y = event.pos
@@ -92,9 +105,14 @@ class Game:
 
             # Проверка, является ли ход возможным без продвижения
             if move in self.board.legal_moves:
-                self.board.push(move)  # Игрок делает ход
+                # Проверка на взятие фигуры
+                if self.board.is_capture(move):
+                    self.capture_sound.play()  # Воспроизведение звука захвата
+                self.board .push(move)  # Игрок делает ход
                 self.last_move = move  # Сохраняем последний ход игрока
-                print(f"User  move: {move}")  # Печать хода игрока
+                self.move_sound.play()  # Воспроизведение звука хода
+                print(f'{"-" * 25}\n' + 
+                        f'User   move: {move}')  # Печать хода игрока
             else:
                 # Проверка на возможное продвижение пешки
                 piece = self.board.piece_at(self.dragging_piece[0])
@@ -109,12 +127,13 @@ class Game:
                             move = chess.Move(self.dragging_piece[0], target_square, promotion=promotion_piece)
                             self.board.push(move)  # Игрок делает ход
                             self.last_move = move  # Сохраняем последний ход игрока
-                            print(f"User  move (promotion): {move}")  # Печать хода с превращением
+                            self.move_sound.play()  # Воспроизведение звука хода
+                            print(f'User   move (promotion): {move}')  # Печать хода с превращением
                         else:
-                            print("No promotion piece selected.")  # Если не выбрано
+                            print('No promotion piece selected.')  # Если не выбрано
                     else:
-                        print(f"Illegal move attempted: {move}")  # Выводим сообщение о недопустимом ходе
+                        print(f'Illegal move attempted: {move}')  # Выводим сообщение о недопустимом ходе
                 else:
-                    print(f"Illegal move attempted: {move}")  # Выводим сообщение о недопустимом ходе
+                    print(f'Illegal move attempted: {move}')  # Выводим сообщение о недопустимом ходе
 
             self.dragging_piece = None
