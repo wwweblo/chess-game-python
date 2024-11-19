@@ -14,8 +14,10 @@ class Game:
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption(name)
 
-        # Инициализация Pygame mixer для звуков
-        pygame.mixer.init()
+        # Загрузка звуков с проверкой, чтобы избежать повторной инициализации
+        if not pygame.mixer.get_init():
+            pygame.mixer.init()  # Инициализируем pygame.mixer только один раз
+
         self.move_sound = pygame.mixer.Sound('assets/sounds/move-self.mp3')  # Загрузка звука
         self.capture_sound = pygame.mixer.Sound('assets/sounds/capture.mp3')  # Загрузка звука захвата
 
@@ -108,7 +110,7 @@ class Game:
                 # Проверка на взятие фигуры
                 if self.board.is_capture(move):
                     self.capture_sound.play()  # Воспроизведение звука захвата
-                self.board .push(move)  # Игрок делает ход
+                self.board.push(move)  # Игрок делает ход
                 self.last_move = move  # Сохраняем последний ход игрока
                 self.move_sound.play()  # Воспроизведение звука хода
                 print(f'{"-" * 25}\n' + 
