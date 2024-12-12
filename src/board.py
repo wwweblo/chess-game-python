@@ -10,14 +10,14 @@ def load_images():
     images = {}
     for color in COLORS:
         for piece in PIECES:
-            images[color + piece] = pygame.image.load(f'assets/images/pieces/{color}{piece}.png')
+            images[color + piece] = pygame.image.load(f'assets/images/pieces/wikipedia/{color}{piece}.png')
     return images
 
 def draw_board(screen, board, dragging_piece, mouse_pos, flip_board=False, last_move=None):
     '''Отрисовка доски с подсветкой последнего хода'''
     images = load_images()
-    colors = [pygame.Color("white"), pygame.Color("gray")]
-    highlight_color = pygame.Color("yellow")
+    colors = [(255, 255, 255), (169, 169, 169)]  # Белый и серый в RGB
+    highlight_color = (255, 255, 0, 60)
 
     for row in range(8):
         for col in range(8):

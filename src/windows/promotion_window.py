@@ -1,7 +1,7 @@
 import pygame
 import chess
 
-def choose_promotion(screen):
+def open(screen):
     # Окно для выбора фигуры для превращения пешки
     font = pygame.font.SysFont(None, 50)
     options = [("Ферзь", chess.QUEEN), ("Ладья", chess.ROOK), ("Слон", chess.BISHOP), ("Конь", chess.KNIGHT)]

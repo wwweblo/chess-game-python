@@ -1,7 +1,7 @@
 import pygame
-from game import Game
+from src.game import Game
 
-'''
+r'''
 / ============================ \
 
         CHESS GAME LAUNCHER
@@ -12,11 +12,10 @@ from game import Game
 def main():
     pygame.init()
     
-    game = Game(name='Chess',
-                window_height=800,
+    game = Game(window_height=800,
                 window_width=800,
-                bot_depth=3,
-                logging=False)
+                bot_depth=3
+                )
     game.run()
     pygame.quit()
 

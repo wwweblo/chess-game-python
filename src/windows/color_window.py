@@ -1,15 +1,37 @@
 import pygame
 import chess
 
-def choose_color(screen):
-    # Создание окна для выбора цвета
-    font = pygame.font.SysFont(None, 50)
-    white_button = pygame.Rect(150, 300, 200, 100)
-    black_button = pygame.Rect(450, 300, 200, 100)
+def open(screen):
+    # Получаем размеры экрана
+    screen_width, screen_height = screen.get_size()
+
+    # Адаптивные размеры кнопок
+    button_width = screen_width // 4
+    button_height = screen_height // 6
+    button_gap = screen_width // 8
+
+    # Координаты кнопок
+    white_button = pygame.Rect(
+        button_gap, screen_height // 2 - button_height // 2, button_width, button_height
+    )
+    black_button = pygame.Rect(
+        screen_width - button_gap - button_width, screen_height // 2 - button_height // 2, button_width, button_height
+    )
+
+    # Инициализация шрифта
+    font = pygame.font.SysFont(None, screen_width // 15)
+    hint_font = pygame.font.SysFont(None, screen_width // 20)
 
     choosing = True
     while choosing:
         screen.fill((255, 255, 255))  # Белый фон
+
+        # Подсказка пользователю
+        hint_text = hint_font.render("Выберите цвет фигур", True, (0, 0, 0))
+        hint_text_rect = hint_text.get_rect(center=(screen_width // 2, screen_height // 4))
+        screen.blit(hint_text, hint_text_rect)
+
+        # Рисуем кнопки
         pygame.draw.rect(screen, (200, 200, 200), white_button)
         pygame.draw.rect(screen, (100, 100, 100), black_button)
 
