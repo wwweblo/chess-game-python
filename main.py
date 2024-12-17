@@ -14,6 +14,7 @@ def main():
     
     game = Game(window_height=800,
                 window_width=800,
+                isBotOn=True,
                 bot_depth=3
                 )
     game.run()

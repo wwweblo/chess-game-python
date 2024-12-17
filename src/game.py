@@ -1,15 +1,15 @@
 import pygame
 import time
 import chess
-from src.board import draw_board
 from src.bot import ChessBotWrapper
+from src.windows.board import draw_board
 from src.windows import (promotion_window,
                          color_window,
                          result_window)
 
 
 class Game:
-    def __init__(self, window_width, window_height, bot_depth, name='Chess', icon_path='assets/images/icons/icon.png'):
+    def __init__(self, window_width, window_height, isBotOn=True, bot_depth=3, name='Chess', icon_path='assets/images/icons/icon.png'):
 
         # Инициализация основных параметров
         self.width, self.height = window_width, window_height
@@ -33,7 +33,9 @@ class Game:
 
         # Инициализация бота
         self.board = chess.Board()
-        self.chess_bot = ChessBotWrapper(depth=bot_depth)
+        self.isBotOn = isBotOn
+        if self.isBotOn:
+            self.chess_bot = ChessBotWrapper(depth=bot_depth)
 
         self.dragging_piece = None
         self.player_color = None  # Цвет игрока
@@ -53,15 +55,15 @@ class Game:
             self.flip_board = True  # Переворачиваем доску для черных'
 
     def run(self):
-        # Вызов выбора цвета перед началом игры
+        """Запуск игры."""
         self.choose_color()
 
-        running = True
-        while running:
+        while True:
             mouse_pos = pygame.mouse.get_pos()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
+                    pygame.quit()
+                    return
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     self.handle_mouse_button_down(event)
                 elif event.type == pygame.MOUSEBUTTONUP:
@@ -75,19 +77,33 @@ class Game:
             # Проверяем окончание партии
             if self.board.is_game_over():
                 result = self.board.result()
-                result_window.open(self.screen, result)
-                return
+                action = result_window.open(self.screen, result)
+                if action == "replay":
+                    self.restart_game()
+                    return
+                elif action == "close":
+                    continue  # Закрываем окно результатов, продолжаем просмотр текущей партии
 
             # Отрисовка доски с подсветкой последнего хода
             draw_board(self.screen, self.board, self.dragging_piece, mouse_pos, self.flip_board, self.last_move)
             pygame.display.flip()
 
-            # Если очередь бота и цвет бота совпадает с текущим ходом
-            if self.board.turn != self.player_color and self.current_move_index == len(self.move_history) - 1:
+            # Если бот включен и очередь бота
+            if self.isBotOn and self.board.turn != self.player_color and self.current_move_index == len(self.move_history) - 1:
                 time.sleep(1)
                 best_move = self.chess_bot.find_best_move(self.board)
                 if best_move is not None:
                     self.execute_move(best_move, is_player=False)
+
+    def restart_game(self):
+        """Перезапуск игры."""
+        self.board = chess.Board()
+        self.move_history = []
+        self.current_move_index = -1
+        self.dragging_piece = None
+        self.last_move = None
+        self.flip_board = False
+        self.choose_color()
 
     def handle_mouse_button_down(self, event):
         x, y = event.pos
@@ -100,7 +116,7 @@ class Game:
 
         square = chess.square(col, row)
         piece = self.board.piece_at(square)
-        if piece and piece.color == self.player_color:  # Только фигуры игрока можно двигать
+        if piece and piece.color == self.board.turn:  # Только фигуры текущего игрока можно двигать
             piece_color = 'w' if piece.color == chess.WHITE else 'b'
             piece_type = piece.symbol().upper()
             self.dragging_piece = (square, (piece_color, piece_type))
