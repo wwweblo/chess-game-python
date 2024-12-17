@@ -1,21 +1,22 @@
 import pygame
+import sqlite3
 import time
 import chess
 from src.bot import ChessBotWrapper
 from src.windows.board import draw_board
-from src.windows import (promotion_window,
-                         color_window,
-                         result_window)
-
+from src.windows import promotion_window, color_window, result_window
+from src.db.database import ChessDatabase  # Подключаем класс базы данных
 
 class Game:
-    def __init__(self, window_width, window_height, isBotOn=True, bot_depth=3, name='Chess', icon_path='assets/images/icons/icon.png'):
-
+    def __init__(self, window_width, window_height, isBotOn=True, bot_depth=3, name='Chess', icon_path='assets/images/icons/icon.png', chess_db=None):
         # Инициализация основных параметров
         self.width, self.height = window_width, window_height
         self.square_size = self.width // 8
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption(name)
+        
+        # Подключение к базе данных дебютов
+        self.chess_db = chess_db
 
         # Загрузка иконки
         self.icon_path = icon_path
@@ -134,57 +135,41 @@ class Game:
             target_square = chess.square(col, row)
             move = chess.Move(self.dragging_piece[0], target_square)
 
-            # Проверка, является ли ход возможным без продвижения
             if move in self.board.legal_moves:
                 self.execute_move(move, is_player=True)
             else:
-                # Проверка на возможное продвижение пешки
-                piece = self.board.piece_at(self.dragging_piece[0])
-                if piece and piece.piece_type == chess.PAWN and chess.square_rank(target_square) in [0, 7]:
-                    # Проверка, легален ли ход, если добавить превращение в ферзя
-                    promotion_move = chess.Move(self.dragging_piece[0], target_square, promotion=chess.QUEEN)
-                    if promotion_move in self.board.legal_moves:
-                        # Ход с превращением в ферзя возможен, вызываем выбор фигуры
-                        promotion_piece = self.choose_promotion()
-                        if promotion_piece:
-                            # Создаем ход с выбранной фигурой
-                            move = chess.Move(self.dragging_piece[0], target_square, promotion=promotion_piece)
-                            self.execute_move(move, is_player=True)
-                        else:
-                            print('No promotion piece selected.')  # Если не выбрано
-                    else:
-                        print(f'Illegal move attempted: {move}')  # Выводим сообщение о недопустимом ходе
-                else:
-                    print(f'Illegal move attempted: {move}')  # Выводим сообщение о недопустимом ходе
+                print(f'Illegal move attempted: {move}')
 
             self.dragging_piece = None
 
     def execute_move(self, move, is_player):
-        """Выполняет ход"""
+        """Выполняет ход и выводит название дебюта."""
         if self.board.is_capture(move):
-            self.capture_sound.play()  # Воспроизведение звука захвата
+            self.capture_sound.play()
         else:
-            self.move_sound.play()  # Воспроизведение звука обычного хода
+            self.move_sound.play()
 
         self.board.push(move)
-        self.last_move = move  # Сохраняем последний ход
-
-        # Если текущий индекс не указывает на конец истории, обрезаем историю
-        if self.current_move_index < len(self.move_history) - 1:
-            self.move_history = self.move_history[:self.current_move_index + 1]
-
-        # Добавляем новый ход в историю и обновляем индекс
+        self.last_move = move
         self.move_history.append(move)
         self.current_move_index += 1
 
+        # Проверка текущей позиции в базе данных
+        fen = self.board.fen()
+        if self.chess_db:
+            opening = self.chess_db.find_opening_by_fen(fen)
+            if opening:
+                print(f"Position recognized: {opening[1]} (EN) / {opening[2]} (RU)")
+            else:
+                print("Position not found in database.")
+
         if is_player:
-            print('-' * 30)
-            print(f'User move: {move}')
+            print(  "-" * 30 +
+                    f"\nUser move: {move}")
         else:
-            print(f'Bot move: {move}')
+            print(f"Bot move: {move}")
 
     def undo_move(self):
-        """Отменяет последний ход, если возможно."""
         if self.current_move_index >= 0:
             self.board.pop()
             self.current_move_index -= 1
@@ -192,7 +177,6 @@ class Game:
             print("Move undone.")
 
     def redo_move(self):
-        """Повторяет следующий ход из истории, если возможно."""
         if self.current_move_index < len(self.move_history) - 1:
             self.current_move_index += 1
             move = self.move_history[self.current_move_index]
