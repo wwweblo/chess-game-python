@@ -1,5 +1,4 @@
 import pygame
-import sqlite3
 from src.game import Game
 from src.db.database import ChessDatabase  # Подключаем класс базы данных
 
@@ -31,7 +30,8 @@ def main():
                 window_width=window_size,
                 isBotOn=True,
                 bot_depth=3,
-                chess_db=chess_db  # Передаем базу данных в игру
+                chess_db=chess_db,  # Передаем базу данных в игру
+                language='EN'
                 )
     game.run()
     
