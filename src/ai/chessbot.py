@@ -167,7 +167,7 @@ class ChessBot:
         return eval
 
     def evaluate_opening_principles(self, board, color):
-        """Оценивает соблюдение дебютных принципов."""
+        """Улучшенная оценка дебютных принципов."""
         score = 0
 
         # Бонус за контроль центра пешками
@@ -177,7 +177,7 @@ class ChessBot:
             if piece and piece.piece_type == chess.PAWN and piece.color == color:
                 score += 50
 
-        # Бонус за развитие коней и слонов
+        # Бонус за развитие легких фигур
         developed_knight_positions = [chess.C3, chess.F3, chess.C6, chess.F6]
         developed_bishop_positions = [chess.C4, chess.F4, chess.C5, chess.F5]
 
@@ -189,22 +189,29 @@ class ChessBot:
             if square in developed_bishop_positions:
                 score += 30
 
-        # Штраф за ферзя в центре доски
-        center_squares = [chess.D4, chess.E4, chess.D5, chess.E5]
+        # Штраф за неразвитые легкие фигуры
+        starting_knight_positions = [chess.B1, chess.G1, chess.B8, chess.G8]
+        starting_bishop_positions = [chess.C1, chess.F1, chess.C8, chess.F8]
+
+        for square in starting_knight_positions:
+            piece = board.piece_at(square)
+            if piece and piece.piece_type == chess.KNIGHT and piece.color == color:
+                score -= 20
+
+        for square in starting_bishop_positions:
+            piece = board.piece_at(square)
+            if piece and piece.piece_type == chess.BISHOP and piece.color == color:
+                score -= 20
+
+        # Штраф за раннее движение ферзя
         for square in board.pieces(chess.QUEEN, color):
-            if square in center_squares:
-                score -= 1000  # Значительный штраф за ферзя в центре доски
+            if chess.square_rank(square) > 4 or chess.square_rank(square) < 3:
+                score -= 50
 
-        # Штраф за повторное движение одной фигуры
-        piece_moves = {}
-        for move in board.move_stack:
-            piece = board.piece_at(move.from_square)
-            if piece and piece.color == color:
-                piece_moves[piece] = piece_moves.get(piece, 0) + 1
-
-        for piece, moves in piece_moves.items():
-            if moves > 1:
-                score -= 20 * (moves - 1)  # Штраф за повторные ходы
+        # Бонус за рокировку
+        king_square = chess.E1 if color == chess.WHITE else chess.E8
+        if not board.piece_at(king_square):
+            score += 50
 
         return score
 

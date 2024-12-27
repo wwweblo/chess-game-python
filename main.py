@@ -1,6 +1,6 @@
 import pygame
 from src.game import Game
-from src.db.database import ChessDatabase  # Подключаем класс базы данных
+from src.db.new.database import ChessDatabase
 
 r'''
 / ============================ 
@@ -10,29 +10,65 @@ r'''
 \ ============================ /
 '''
 
-def main():
-    pygame.init()
-    
-    # Подключение к базе данных
-    db_path = "data/openings/chess_openings.db"
-    chess_db = ChessDatabase(db_path)
-
-    # Получение размеров экрана
+def getWindowSize():
+    """Получение размеров экрана."""
     screen_info = pygame.display.Info()
     screen_width = screen_info.current_w - 150
-    screen_height = screen_info.current_h - 150
-    
-    # Установка размеров окна по меньшей из координат
+    screen_height = screen_info.current_h - 150 
     window_size = min(screen_width, screen_height)
+    return window_size
+
+def load_settings(file_path):
+    """Загрузка настроек из текстового файла."""
+    settings = {}
+    try:
+        with open(file_path, 'r') as file:
+            for line in file:
+                if "=" in line:
+                    key, value = line.strip().split("=", 1)
+                    # Автоматическое приведение типов
+                    if value.lower() in ["true", "false"]:
+                        value = value.lower() == "true"
+                    elif value.isdigit():
+                        value = int(value)
+                    settings[key] = value
+    except FileNotFoundError:
+        print(f"Settings file not found: {file_path}. Using default settings.")
+    return settings
+
+def main():
+    pygame.init()
+
+    # Загрузка настроек
+    settings = load_settings("user_settings.txt")
+
+    # Подключение к базе данных
+    db_path = settings.get("db_path", "data/openings/chess_openings.db")
+    chess_db = ChessDatabase(db_path)
+    
+    # Определение размеров окна
+    if settings.get("window_autosize", True):  # Если авторазмер включен
+        window_size = getWindowSize()
+        window_width = window_size
+        window_height = window_size
+    else:  # Используем размеры из настроек
+        window_width = settings.get("window_width", 800)
+        window_height = settings.get("window_height", 800)
     
     # Создание и запуск игры
-    game = Game(window_height=window_size,
-                window_width=window_size,
-                isBotOn=True,
-                bot_depth=3,
-                chess_db=chess_db,  # Передаем базу данных в игру
-                language='EN'
-                )
+    game = Game(
+        # Размер окна
+        window_height=window_height,
+        window_width=window_width,
+
+        # Настройки бота
+        isBotOn=settings.get("isBotOn", False),       # Включить бота
+        bot_depth=settings.get("bot_depth", 3),      # Глубина поиска бота
+
+        # Отображение названия позиции
+        chess_db=chess_db,                           # Подключение к базе данных
+        language=settings.get("language", 'EN')     # Язык интерфейса
+    )
     game.run()
     
     # Закрытие базы данных

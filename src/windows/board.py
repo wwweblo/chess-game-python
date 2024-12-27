@@ -16,10 +16,13 @@ def load_images():
 def draw_board(screen, board, dragging_piece, mouse_pos, flip_board=False, last_move=None):
     """Отрисовка доски с подсветкой последнего хода и перетаскиванием фигуры."""
     images = load_images()
-    colors = [(255, 255, 255), (169, 169, 169)]  # Белый и серый в RGB
-    highlight_color = (255, 255, 0, 60)
+    colors = [(235, 235, 208), (119, 148, 85)]  # Белый и серый в RGB
+    highlight_color = (255, 255, 0, 160)  # Желтый с альфа-каналом
 
     square_size = screen.get_width() // 8
+
+    # Создаем временную поверхность для подсветки с поддержкой альфа-канала
+    highlight_surface = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
 
     for row in range(8):
         for col in range(8):
@@ -30,12 +33,13 @@ def draw_board(screen, board, dragging_piece, mouse_pos, flip_board=False, last_
             # Определение цвета клетки
             color = colors[(row + col) % 2]
 
+            pygame.draw.rect(screen, color, pygame.Rect(display_col * square_size, display_row * square_size + 50, square_size, square_size))
+
             # Подсветка клеток последнего хода
             if last_move:
                 if chess.square(col, 7 - row) in (last_move.from_square, last_move.to_square):
-                    color = highlight_color
-
-            pygame.draw.rect(screen, color, pygame.Rect(display_col * square_size, display_row * square_size + 50, square_size, square_size))
+                    highlight_surface.fill(highlight_color)
+                    screen.blit(highlight_surface, (display_col * square_size, display_row * square_size + 50))
 
             # Отображение фигуры
             piece = board.piece_at(chess.square(col, 7 - row))

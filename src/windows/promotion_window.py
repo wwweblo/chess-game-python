@@ -1,15 +1,34 @@
 import pygame
 import chess
 
-def open(screen):
+def open(screen, font_family, language):
+    # Тексты для кнопок в зависимости от языка
+    texts = {
+        "EN": ["Queen", "Rook", "Bishop", "Knight"],
+        "RU": ["Ферзь", "Ладья", "Слон", "Конь"]
+    }
+
+    # Получаем текстовые метки для текущего языка
+    labels = texts.get(language, texts["EN"])
+    options = [(labels[0], chess.QUEEN), (labels[1], chess.ROOK), (labels[2], chess.BISHOP), (labels[3], chess.KNIGHT)]
+
+    # Получаем размер экрана
+    screen_width, screen_height = screen.get_size()
+
     # Окно для выбора фигуры для превращения пешки
-    font = pygame.font.SysFont(None, 50)
-    options = [("Ферзь", chess.QUEEN), ("Ладья", chess.ROOK), ("Слон", chess.BISHOP), ("Конь", chess.KNIGHT)]
+    font = pygame.font.Font(font_family, 50)
     option_rects = []
 
-    # Создаем прямоугольники для каждой кнопки
+    # Вычисляем положение кнопок
+    button_width = 200
+    button_height = 80
+    total_height = len(options) * (button_height + 20) - 20  # Общее пространство, занимаемое кнопками
+    start_y = (screen_height - total_height) // 2  # Начальная позиция по вертикали
+
     for i, (text, _) in enumerate(options):
-        option_rects.append(pygame.Rect(200, 100 + i * 100, 200, 80))
+        x = (screen_width - button_width) // 2  # Центрируем по горизонтали
+        y = start_y + i * (button_height + 20)
+        option_rects.append(pygame.Rect(x, y, button_width, button_height))
 
     choosing = True
     while choosing:

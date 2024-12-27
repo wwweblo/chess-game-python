@@ -1,2 +1,9 @@
-chess 1.9.4
-pygame 2.6.0
+- chess 1.9.4
+- pygame 2.6.0
+
+----
+
+BUILD IN:
+- os
+- time
+- sqlite3

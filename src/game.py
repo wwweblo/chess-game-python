@@ -3,10 +3,10 @@ import time
 import chess
 from src.bot import ChessBotWrapper
 from src.windows.board import draw_board
-from src.windows import promotion_window, color_window, result_window
+from src.windows import promotion_window, color_window
 
 class Game:
-    def __init__(self, window_width, window_height, isBotOn=True, bot_depth=3, name='Chess', icon_path='assets/images/icons/icon.png', chess_db=None, language='EN'):
+    def __init__(self, window_width, window_height, isBotOn=True, bot_depth=3, name='Chess', icon_path='assets/images/icons/icon.png', font_family='./assets/fonts/graphik_LCG/GraphikLCG-Medium.ttf', chess_db=None, language='EN'):
         # Инициализация основных параметров
         self.extra_space = 50  # Дополнительное пространство под название позиции
         self.window_width = window_width
@@ -22,7 +22,8 @@ class Game:
         self.chess_db = chess_db
         self.language = language  # Язык отображения названия дебюта ("EN" или "RU")
         
-        self.font = pygame.font.Font('./assets/fonts/graphik_LCG/GraphikLCG-Medium.ttf', 32)
+        self.font_family = font_family
+        # self.font = pygame.font.Font(self.font_family, 36)
 
         # Загрузка иконки
         self.icon_path = icon_path
@@ -57,17 +58,16 @@ class Game:
         self.current_opening = None
 
     def choose_promotion(self):
-        return promotion_window.open(self.screen)
+        return promotion_window.open(self.screen, self.font_family, self.language)
 
     def choose_color(self):
-        self.player_color = color_window.open(self.screen)
+        self.player_color = color_window.open(self.screen, self.font_family, self.language)
         if self.player_color == chess.BLACK:
             self.flip_board = True  # Переворачиваем доску для черных
 
     def run(self):
         """Запуск игры."""
         self.choose_color()
-        font = pygame.font.Font(None, 36)  # Шрифт для текста
 
         while True:
             mouse_pos = pygame.mouse.get_pos()
@@ -90,26 +90,37 @@ class Game:
             # Проверяем окончание партии
             if self.board.is_game_over():
                 result = self.board.result()
-                action = result_window.open(self.screen, result)
-                if action == "replay":
-                    self.restart_game()
-                    return
-                elif action == "close":
-                    continue
+                if self.language == "RU":
+                    if result == "1-0":
+                        self.current_opening_name = "Белые победили!"
+                    elif result == "0-1":
+                        self.current_opening_name = "Черные победили!"
+                    elif result == "1/2-1/2":
+                        self.current_opening_name = "Ничья!"
+                    else:
+                        self.current_opening_name = "Игра окончена"
+                else:  # По умолчанию английский
+                    if result == "1-0":
+                        self.current_opening_name = "White wins!"
+                    elif result == "0-1":
+                        self.current_opening_name = "Black wins!"
+                    elif result == "1/2-1/2":
+                        self.current_opening_name = "Draw!"
+                    else:
+                        self.current_opening_name = "Game Over"
+
 
             # Отрисовка доски с подсветкой последнего хода
             draw_board(self.screen, self.board, self.dragging_piece, mouse_pos, self.flip_board, self.last_move)
 
-            # Отображение названия дебюта в верхней части
-            if self.current_opening_name:
-                pygame.draw.rect(self.screen, (255, 255, 255), (0, 0, self.window_height, self.extra_space))  # Белый фон сверху
-                text_surface = self.font.render(f"Opening: {self.current_opening_name}", True, (0, 0, 0))
-                self.screen.blit(text_surface, (10, 10))  # Положение текста
+            # Отображение названия дебюта или результата
+            pygame.draw.rect(self.screen, (255, 255, 255), (0, 0, self.window_width, self.extra_space))  # Белый фон сверху
+            self.display_opening_name()
 
             pygame.display.flip()
 
-            # Если бот включен и его очередь
-            if self.isBotOn and self.board.turn != self.player_color:
+            # Если бот включен и его очередь, и игра не окончена
+            if not self.board.is_game_over() and self.isBotOn and self.board.turn != self.player_color:
                 time.sleep(1)
                 best_move = self.chess_bot.find_best_move(self.board)
                 if best_move is not None:
@@ -173,16 +184,30 @@ class Game:
             move = chess.Move(self.dragging_piece[0], target_square)
 
             # Проверяем валидность хода, даже если бот выключен
-            if move in self.board.legal_moves:
+            piece = self.board.piece_at(self.dragging_piece[0])
+            if piece and piece.piece_type == chess.PAWN and chess.square_rank(target_square) in [0, 7]:
+                # Проверка на возможное продвижение пешки
+                promotion_move = chess.Move(self.dragging_piece[0], target_square, promotion=chess.QUEEN)
+                if promotion_move in self.board.legal_moves:
+                    # Ход с превращением в ферзя возможен, вызываем выбор фигуры
+                    promotion_piece = self.choose_promotion()
+                    if promotion_piece:
+                        # Создаем ход с выбранной фигурой
+                        move = chess.Move(self.dragging_piece[0], target_square, promotion=promotion_piece)
+                        self.execute_move(move, is_player=True)
+                    else:
+                        print("No promotion piece selected.")
+                else:
+                    print(f"Illegal move attempted: {move}")
+            elif move in self.board.legal_moves:
                 self.execute_move(move, is_player=True)
             else:
-                print(f'Illegal move attempted: {move}')
+                print(f"Illegal move attempted: {move}")
 
             self.dragging_piece = None
 
     def execute_move(self, move, is_player):
         """Выполняет ход и обновляет состояние игры."""
-        # Проверяем валидность хода перед выполнением
         if move not in self.board.legal_moves:
             print(f"Invalid move: {move}")
             return
@@ -201,18 +226,10 @@ class Game:
 
         self.move_history.append(move)
         self.current_move_index += 1
-
         self.last_move = move
 
-        # Проверка текущей позиции в базе данных
-        fen = self.board.fen()
-        self.current_opening_name = None
-        if self.chess_db:
-            opening = self.chess_db.find_opening_by_fen(fen)
-            if opening:
-                self.current_opening_name = opening[1] if self.language == 'EN' else opening[2]
-            else:
-                self.current_opening_name = "Unknown Opening"
+        # Обновляем название дебюта
+        self.update_opening()
 
         if is_player:
             print(f"User move: {move}")
@@ -221,21 +238,29 @@ class Game:
 
 
     def update_opening(self):
-        """Обновляет название текущего дебюта на основе позиции."""
+        """Обновляет название текущего дебюта и варианта на основе позиции."""
         if self.chess_db:
             fen = self.board.fen()
-            opening = self.chess_db.find_opening_by_fen(fen)
-            if opening:
-                self.current_opening = opening[1] if self.language == 'EN' else opening[2]
-            else:
-                self.current_opening = "Unknown Opening"
+            self.current_opening_name = self.chess_db.get_full_opening_name_by_fen(fen, self.language)
+
 
     def display_opening_name(self):
-        """Отображает название текущего дебюта на экране."""
-        if self.current_opening:
-            font = pygame.font.Font(None, 36)
-            text = font.render(self.current_opening, True, (0, 0, 0))
-            self.screen.blit(text, (10, 10))
+        """Отображает название текущего дебюта на экране, уменьшая размер текста, если он не помещается."""
+        if self.current_opening_name:
+            max_width = self.window_width - 20  # Максимальная ширина текста (с учетом отступов)
+            font_size = 32  # Начальный размер шрифта
+            font = pygame.font.Font(self.font_family, font_size)
+
+            # Уменьшаем размер шрифта, пока текст не помещается в допустимую ширину
+            while font.size(self.current_opening_name)[0] > max_width and font_size > 1:
+                font_size -= 1
+                font = pygame.font.Font(self.font_family, font_size)
+
+            # Отрисовка текста
+            text_surface = font.render(self.current_opening_name, True, (0, 0, 0))
+            text_rect = text_surface.get_rect(midleft=(10, self.extra_space // 2))
+            self.screen.blit(text_surface, text_rect)
+
     def undo_move(self):
         """Откатывает последний ход и синхронизирует состояние доски."""
         if self.current_move_index >= 0:

@@ -1,7 +1,7 @@
 import pygame
 import chess
 
-def open(screen):
+def open(screen, font_family, language='EN'):
     # Получаем размеры экрана
     screen_width, screen_height = screen.get_size()
 
@@ -18,16 +18,33 @@ def open(screen):
         screen_width - button_gap - button_width, screen_height // 2 - button_height // 2, button_width, button_height
     )
 
+    # Текст на разных языках
+    texts = {
+        'EN': {
+            'hint': "Choose your side",
+            'white': "White",
+            'black': "Black"
+        },
+        'RU': {
+            'hint': "Выберите цвет фигур",
+            'white': "Белые",
+            'black': "Черные"
+        }
+    }
+
+    # Выбираем тексты на основе языка
+    selected_texts = texts.get(language, texts['EN'])
+
     # Инициализация шрифта
-    font = pygame.font.SysFont(None, screen_width // 15)
-    hint_font = pygame.font.SysFont(None, screen_width // 20)
+    font = pygame.font.Font(font_family, screen_width // 15)
+    hint_font = pygame.font.Font(font_family, screen_width // 20)
 
     choosing = True
     while choosing:
         screen.fill((255, 255, 255))  # Белый фон
 
         # Подсказка пользователю
-        hint_text = hint_font.render("Выберите цвет фигур", True, (0, 0, 0))
+        hint_text = hint_font.render(selected_texts['hint'], True, (0, 0, 0))
         hint_text_rect = hint_text.get_rect(center=(screen_width // 2, screen_height // 4))
         screen.blit(hint_text, hint_text_rect)
 
@@ -36,8 +53,8 @@ def open(screen):
         pygame.draw.rect(screen, (100, 100, 100), black_button)
 
         # Текст на кнопках
-        white_text = font.render("Белые", True, (0, 0, 0))
-        black_text = font.render("Черные", True, (255, 255, 255))
+        white_text = font.render(selected_texts['white'], True, (0, 0, 0))
+        black_text = font.render(selected_texts['black'], True, (255, 255, 255))
 
         # Получаем прямоугольники текста и центрируем их в пределах кнопок
         white_text_rect = white_text.get_rect(center=white_button.center)
