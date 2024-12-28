@@ -162,6 +162,10 @@ class Game:
             piece_type = piece.symbol().upper()
             self.dragging_piece = (square, (piece_color, piece_type))
 
+            # Обновляем доску для подсветки доступных ходов
+            draw_board(self.screen, self.board, self.dragging_piece, pygame.mouse.get_pos(), self.flip_board, self.last_move)
+
+
     def handle_mouse_button_up(self, event):
         """Обрабатывает отпускание кнопки мыши и перемещение фигуры."""
         if self.dragging_piece:

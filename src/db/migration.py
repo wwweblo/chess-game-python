@@ -97,7 +97,6 @@ class ChessDatabaseMigration:
             existing_fen = cursor_new.fetchone()
 
             if existing_fen:
-                print(f"FEN {fen} уже существует. Пропускаем эту запись.")
                 continue  # Пропускаем запись, если FEN уже есть
 
             # Вставляем запись с ходами и FEN в таблицу Openings
@@ -113,8 +112,8 @@ class ChessDatabaseMigration:
         self.new_conn.close()
 
 def main():
-    old_db_path = "data/openings/chess_openings.db"
-    new_db_path = "data/openings/new_chess_openings.db"
+    old_db_path = "data/openings/old_chess_openings.db"
+    new_db_path = "data/openings/chess_openings.db"
     
     migration = ChessDatabaseMigration(old_db_path, new_db_path)
     migration.create_new_tables()

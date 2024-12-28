@@ -58,7 +58,7 @@ def display_openings_as_table(openings):
         print(row)
 
 def main():
-    db_path = "data/openings/chess_openings.db"
+    db_path = "data/openings/old_chess_openings.db"
     conn = connect_db(db_path)
 
     while True:

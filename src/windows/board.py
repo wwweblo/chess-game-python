@@ -14,15 +14,21 @@ def load_images():
     return images
 
 def draw_board(screen, board, dragging_piece, mouse_pos, flip_board=False, last_move=None):
-    """Отрисовка доски с подсветкой последнего хода и перетаскиванием фигуры."""
+    """Отрисовка доски с подсветкой последнего хода, доступных ходов и перетаскиванием фигуры."""
     images = load_images()
-    colors = [(235, 235, 208), (119, 148, 85)]  # Белый и серый в RGB
+    colors = [(252, 252, 252), (181, 181, 181)]  # Белый и серый в RGB
     highlight_color = (255, 255, 0, 160)  # Желтый с альфа-каналом
+    available_move_color = (0, 255, 0, 160)  # Зеленый с альфа-каналом
 
     square_size = screen.get_width() // 8
 
     # Создаем временную поверхность для подсветки с поддержкой альфа-канала
     highlight_surface = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
+
+    available_moves = []
+    if dragging_piece:
+        piece_square = dragging_piece[0]
+        available_moves = [move.to_square for move in board.legal_moves if move.from_square == piece_square]
 
     for row in range(8):
         for col in range(8):
@@ -41,6 +47,11 @@ def draw_board(screen, board, dragging_piece, mouse_pos, flip_board=False, last_
                     highlight_surface.fill(highlight_color)
                     screen.blit(highlight_surface, (display_col * square_size, display_row * square_size + 50))
 
+            # Подсветка доступных клеток
+            if chess.square(col, 7 - row) in available_moves:
+                highlight_surface.fill(available_move_color)
+                screen.blit(highlight_surface, (display_col * square_size, display_row * square_size + 50))
+
             # Отображение фигуры
             piece = board.piece_at(chess.square(col, 7 - row))
             if piece:
@@ -58,3 +69,7 @@ def draw_board(screen, board, dragging_piece, mouse_pos, flip_board=False, last_
         piece_image = images[piece_color + piece_type]
         piece_rect = piece_image.get_rect(center=(mouse_pos[0], mouse_pos[1]))
         screen.blit(piece_image, piece_rect)
+
+
+# Добавляем вызов обновления доступных ходов в метод handle_mouse_button_down
+

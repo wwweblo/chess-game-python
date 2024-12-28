@@ -7,6 +7,8 @@ run the game by executing the following command in your terminal:
 python main.py
 ```
 
+While game is running you can undo and redo moves by pressing `left arrow` and `right arrow` keys.
+
 ## ⚙️ Settings
 All settings are stored in the `user_setings.txt` file.
 
@@ -34,6 +36,8 @@ also used in project:
 - sqlite3
 
 ## 📄 Database
+Used in this project to show position name
+![db usege](assets\images\docs-images\italian-game-pos.png)
 Database is stored in `data/openings/chess_openings` folder.
 
 ### Tables
@@ -85,6 +89,6 @@ p p p p p p p p
 P P P P . P P P
 R N B Q K B N R
 ```
-if current position is not into the base you will be asked to name it on english and russian.
+if current position is not into the base you will be asked to name it on english and russian. Separate opening name and variation name with `:`
 
 2. Run `src\db\migration.py` to convert old database to new one.
