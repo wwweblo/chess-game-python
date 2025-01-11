@@ -1,5 +1,5 @@
 # ♟️Chess Game
-![board start position](assets\images\docs-images\board-start-pos.png)
+![board start position](assets/images/docs-images/board-start-pos.png)
 
 ## Run the game
 run the game by executing the following command in your terminal:

@@ -12,6 +12,7 @@ class Game:
         self.window_width = window_width
         self.window_height = window_height + self.extra_space
         self.screen = pygame.display.set_mode((self.window_width, self.window_height))
+        self.key_hold_start = None  # Инициализация времени удержания клавиши
 
         self.square_size = self.window_width // 8
         self.current_opening_name = None  # Название текущего дебюта
@@ -66,7 +67,7 @@ class Game:
             self.flip_board = True  # Переворачиваем доску для черных
 
     def run(self):
-        """Запуск игры."""
+        self.display_title_screen()
         self.choose_color()
 
         while True:
@@ -86,8 +87,19 @@ class Game:
                         self.undo_move()
                     elif event.key == pygame.K_RIGHT:
                         self.redo_move()
+                    elif event.key == pygame.K_r:
+                        if self.key_hold_start is None:
+                            self.key_hold_start = time.time()  # Начало удержания
+                elif event.type == pygame.KEYUP:
+                    if event.key == pygame.K_r:
+                        self.key_hold_start = None  # Сброс времени удержания
 
-            # Проверяем окончание партии
+            # Проверка удержания клавиши R
+            if self.key_hold_start is not None:
+                if time.time() - self.key_hold_start >= 3:  # Удержание 3 секунды
+                    self.reset_to_start_position()
+                    self.key_hold_start = None  # Сброс после выполнения
+
             if self.board.is_game_over():
                 result = self.board.result()
                 if self.language == "RU":
@@ -99,7 +111,7 @@ class Game:
                         self.current_opening_name = "Ничья!"
                     else:
                         self.current_opening_name = "Игра окончена"
-                else:  # По умолчанию английский
+                else:
                     if result == "1-0":
                         self.current_opening_name = "White wins!"
                     elif result == "0-1":
@@ -109,25 +121,66 @@ class Game:
                     else:
                         self.current_opening_name = "Game Over"
 
-
-            # Отрисовка доски с подсветкой последнего хода
             draw_board(self.screen, self.board, self.dragging_piece, mouse_pos, self.flip_board, self.last_move)
 
-            # Отображение названия дебюта или результата
-            pygame.draw.rect(self.screen, (255, 255, 255), (0, 0, self.window_width, self.extra_space))  # Белый фон сверху
+            pygame.draw.rect(self.screen, (255, 255, 255), (0, 0, self.window_width, self.extra_space))
             self.display_opening_name()
 
             pygame.display.flip()
 
-            # Если бот включен и его очередь, и игра не окончена
             if not self.board.is_game_over() and self.isBotOn and self.board.turn != self.player_color:
                 time.sleep(1)
                 best_move = self.chess_bot.find_best_move(self.board)
                 if best_move is not None:
                     self.execute_move(best_move, is_player=False)
 
-    def restart_game(self):
-        """Перезапуск игры."""
+    def display_title_screen(self):
+        """Отображает титульный экран с выбором опций."""
+        font = pygame.font.Font(self.font_family, 48)
+        button_font = pygame.font.Font(self.font_family, 36)
+        title_text = font.render("Chess", True, (0, 0, 0))
+
+        # Кнопки
+        bot_button = pygame.Rect(self.window_width // 2 - 150, self.window_height // 2 - 60, 300, 50)
+        no_bot_button = pygame.Rect(self.window_width // 2 - 150, self.window_height // 2, 300, 50)
+        language_button = pygame.Rect(self.window_width // 2 - 150, self.window_height // 2 + 60, 300, 50)
+
+        while True:
+            self.screen.fill((255, 255, 255))
+            self.screen.blit(title_text, (self.window_width // 2 - title_text.get_width() // 2, self.window_height // 4))
+
+            # Отрисовка кнопок
+            pygame.draw.rect(self.screen, (200, 200, 200), bot_button)
+            pygame.draw.rect(self.screen, (200, 200, 200), no_bot_button)
+            pygame.draw.rect(self.screen, (200, 200, 200), language_button)
+
+            bot_text = button_font.render("Играть с ботом" if self.language == "RU" else "Play with Bot", True, (0, 0, 0))
+            no_bot_text = button_font.render("Играть без бота" if self.language == "RU" else "Play without Bot", True, (0, 0, 0))
+            language_text = button_font.render(f"Язык: {self.language}" if self.language == "RU" else f"Language: {self.language}", True, (0, 0, 0))
+
+            self.screen.blit(bot_text, (bot_button.x + bot_button.width // 2 - bot_text.get_width() // 2, bot_button.y + 10))
+            self.screen.blit(no_bot_text, (no_bot_button.x + no_bot_text.get_width() // 2 - no_bot_text.get_width() // 2, no_bot_button.y + 10))
+            self.screen.blit(language_text, (language_button.x + language_button.width // 2 - language_text.get_width() // 2, language_button.y + 10))
+
+            pygame.display.flip()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if bot_button.collidepoint(event.pos):
+                        self.isBotOn = True
+                        return
+                    elif no_bot_button.collidepoint(event.pos):
+                        self.isBotOn = False
+                        return
+                    elif language_button.collidepoint(event.pos):
+                        self.language = "RU" if self.language == "EN" else "EN"
+
+
+    def reset_to_start_position(self):
+        print("Resetting to start position")
         self.board = chess.Board()
         self.move_history = []
         self.current_move_index = -1
@@ -135,7 +188,8 @@ class Game:
         self.last_move = None
         self.flip_board = False
         self.current_opening = None
-        self.choose_color()
+        self.update_opening()
+
 
     def handle_mouse_button_down(self, event):
         """Обрабатывает нажатие кнопки мыши и захват фигуры."""
@@ -164,7 +218,6 @@ class Game:
 
             # Обновляем доску для подсветки доступных ходов
             draw_board(self.screen, self.board, self.dragging_piece, pygame.mouse.get_pos(), self.flip_board, self.last_move)
-
 
     def handle_mouse_button_up(self, event):
         """Обрабатывает отпускание кнопки мыши и перемещение фигуры."""
@@ -240,13 +293,11 @@ class Game:
         else:
             print(f"Bot move: {move}")
 
-
     def update_opening(self):
         """Обновляет название текущего дебюта и варианта на основе позиции."""
         if self.chess_db:
             fen = self.board.fen()
             self.current_opening_name = self.chess_db.get_full_opening_name_by_fen(fen, self.language)
-
 
     def display_opening_name(self):
         """Отображает название текущего дебюта на экране, уменьшая размер текста, если он не помещается."""

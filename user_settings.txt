@@ -1,7 +1,7 @@
 window_autosize=True
 window_width=800
 window_height=800
-isBotOn=False
+isBotOn=True
 bot_depth=3
 language=EN
 db_path=data/openings/chess_openings.db

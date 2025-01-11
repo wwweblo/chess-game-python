@@ -18,7 +18,7 @@ def getWindowSize():
     window_size = min(screen_width, screen_height)
     return window_size
 
-def load_settings(file_path):
+def loadSettings(file_path):
     """Загрузка настроек из текстового файла."""
     settings = {}
     try:
@@ -40,7 +40,7 @@ def main():
     pygame.init()
 
     # Загрузка настроек
-    settings = load_settings("user_settings.txt")
+    settings = loadSettings("user_settings.txt")
 
     # Подключение к базе данных
     db_path = settings.get("db_path", "data/openings/chess_openings.db")
